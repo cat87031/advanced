@@ -1,0 +1,248 @@
+
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Advanced - 發音拼讀（中英對照）</title>
+<style>
+body{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; background:#f8fafc; color:#0f172a}
+.wrap{max-width:1100px;margin:18px auto;padding:18px}
+.card{background:#fff;border-radius:12px;padding:14px;margin-top:12px;border:1px solid #e6eefc}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{padding:8px 12px;border-radius:10px;background:#0b74ff;color:#fff;border:none;cursor:pointer}
+.btn.ghost{background:#fff;color:#0b74ff;border:1px solid #dbeefe}
+.grid{display:grid;grid-template-columns:1fr 360px;gap:12px;margin-top:14px}
+.word-list{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:520px;overflow:auto;padding-right:8px}
+.word-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#fbfeff;border:1px solid #eef7ff}
+.word-meta{font-size:13px;color:#374151}
+.mask{font-family:monospace;background:#fff;padding:6px;border-radius:6px;border:1px solid #eef7ff;display:inline-block}
+.small{font-size:13px;color:#6b7280}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.word-list{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Advanced (Level B) - 單字發音與拼讀（含中文）</h1>
+  <div class="small">共 150 個單字，點 Play 播音，點中文可複製翻譯；建議使用桌面 Chrome。</div>
+
+  <div class="card controls">
+    <input id="search" type="text" placeholder="搜尋英文或中文..." style="padding:8px;border-radius:8px;border:1px solid #e6eefc;width:300px"/>
+    <input id="lenRange" type="range" min="2" max="20" value="20" style="width:180px"/>
+    <div class="small">最長字母: <span id="lenVal">20</span></div>
+    <button id="randBtn" class="btn">隨機出題</button>
+    <button id="playTest" class="btn ghost">測試發音</button>
+    <button id="downloadBtn" class="btn">下載 HTML</button>
+    <div style="margin-left:auto" class="small">Best: <span id="best">0</span> &nbsp; Score: <span id="score">0</span></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h3>拼讀遊戲</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div class="mask" id="maskText">_ _ _</div><div class="small">字母數: <span id="lenInfo">0</span></div></div>
+          <div><button id="playWord" class="btn">播放單字</button><button id="playLetters" class="btn ghost">逐字母念</button></div>
+        </div>
+        <div style="margin-top:10px">
+          <input id="spellingInput" type="text" placeholder="輸入拼字並按 Enter" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6eefc"/>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button id="checkBtn" class="btn">確認</button>
+            <button id="hintFirst" class="btn ghost">提示：第一個字母</button>
+            <button id="hintLast" class="btn ghost">提示：最後一個字</button>
+            <button id="hintChunks" class="btn ghost">提示：分段念</button>
+            <button id="revealBtn" class="btn ghost">看答案並播放</button>
+          </div>
+          <div class="small" id="hintBox" style="margin-top:8px">提示或訊息會顯示在這裡。</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>單字清單（點右側 Play 發音，點中文可複製）</h3>
+        <div id="words" class="word-list"></div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="card">
+        <h4>遊戲紀錄</h4>
+        <div>回合: <span id="round">0</span></div>
+        <div>分數: <span id="score2">0</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="card small">建議於桌面 Chrome 使用以獲得最佳語音效果。資料來源：使用者提供圖片單字表。</div>
+
+</div>
+
+<script>
+const WORDS = [{word: 'lobe', zh: '耳葉、葉片'},
+{word: 'robe', zh: '長袍、浴袍'},
+{word: 'globe', zh: '地球（儀）、球體'},
+{word: 'probe', zh: '探查、探針'},
+{word: 'code', zh: '代碼'},
+{word: 'coke', zh: '可樂／焦炭'},
+{word: 'choke', zh: '噎到、窒息'},
+{word: 'joke', zh: '笑話'},
+{word: 'smoke', zh: '煙、抽煙'},
+{word: 'dome', zh: '圓屋頂、圓頂'},
+{word: 'hole', zh: '洞'},
+{word: 'mole', zh: '鼴鼠；痣'},
+{word: 'pole', zh: '柱子；極（如北極）'},
+{word: 'whole', zh: '整個的'},
+{word: 'home', zh: '家'},
+{word: 'rope', zh: '繩子'},
+{word: 'slope', zh: '斜坡'},
+{word: 'hose', zh: '水管'},
+{word: 'nose', zh: '鼻子'},
+{word: 'close', zh: '關閉；靠近'},
+{word: 'vote', zh: '投票'},
+{word: 'stove', zh: '爐子'},
+{word: 'doze', zh: '打瞌睡'},
+{word: 'bone', zh: '骨頭'},
+{word: 'cone', zh: '錐體；圓錐（蛋筒）'},
+{word: 'stone', zh: '石頭'},
+{word: 'road', zh: '道路'},
+{word: 'soap', zh: '肥皂'},
+{word: 'goat', zh: '山羊'},
+{word: 'moat', zh: '護城河'},
+{word: 'coat', zh: '外套'},
+{word: 'boat', zh: '船'},
+{word: 'float', zh: '漂浮；遊行花車'},
+{word: 'throat', zh: '喉嚨'},
+{word: 'soak', zh: '浸泡；滲透'},
+{word: 'coast', zh: '海岸'},
+{word: 'roast', zh: '烤（肉）；烘烤'},
+{word: 'coach', zh: '教練；長途巴士'},
+{word: 'puppy', zh: '小狗'},
+{word: 'muddy', zh: '泥濘的'},
+{word: 'radio', zh: '收音機'},
+{word: 'toe', zh: '腳趾'},
+{word: 'doe', zh: '母鹿'},
+{word: 'bow', zh: '弓；鞠躬；蝴蝶結'},
+{word: 'low', zh: '低的；低聲地'},
+{word: 'mow', zh: '割（草）'},
+{word: 'row', zh: '划船；一排'},
+{word: 'tow', zh: '拖曳'},
+{word: 'blow', zh: '吹；打擊'},
+{word: 'crow', zh: '烏鴉'},
+{word: 'grow', zh: '生長'},
+{word: 'show', zh: '展示；表演'},
+{word: 'slow', zh: '慢的'},
+{word: 'snow', zh: '下雪、雪'},
+{word: 'flow', zh: '流動'},
+{word: 'throw', zh: '投擲'},
+{word: 'yellow', zh: '黃色的'},
+{word: 'bowl', zh: '碗；保齡球'},
+{word: 'host', zh: '主持人；主辦'},
+{word: 'sound', zh: '聲音；聽起來'},
+{word: 'round', zh: '圓的；一輪'},
+{word: 'ground', zh: '地面'},
+{word: 'blouse', zh: '女上衣'},
+{word: 'house', zh: '房子'},
+{word: 'mouse', zh: '老鼠'},
+{word: 'cow', zh: '母牛'},
+{word: 'owl', zh: '貓頭鷹'},
+{word: 'prowl', zh: '徘徊、潛行（捕獵）'},
+{word: 'down', zh: '向下；羽毛'},
+{word: 'gown', zh: '長袍；禮服'},
+{word: 'town', zh: '城鎮'},
+{word: 'brown', zh: '棕色的'},
+{word: 'clown', zh: '小丑'},
+{word: 'crown', zh: '王冠'},
+{word: 'frown', zh: '皺眉'},
+{word: 'tower', zh: '塔'},
+{word: 'zoo', zh: '動物園'},
+{word: 'cool', zh: '涼的；酷的'},
+{word: 'tool', zh: '工具'},
+{word: 'stool', zh: '凳子'},
+{word: 'boot', zh: '靴子'},
+{word: 'root', zh: '根'},
+{word: 'goose', zh: '鵝'},
+{word: 'booth', zh: '攤位；小隔間'},
+{word: 'tooth', zh: '牙齒'},
+{word: 'roof', zh: '屋頂'},
+{word: 'hoop', zh: '圈；環'},
+{word: 'scoop', zh: '鏟子；勺子；獨家新聞'},
+{word: 'stoop', zh: '彎腰；屈服'},
+{word: 'troop', zh: '部隊；一群'},
+{word: 'room', zh: '房間'},
+{word: 'broom', zh: '掃帚'},
+{word: 'groom', zh: '新郎；打理（馬）'},
+{word: 'bloom', zh: '開花；花'},
+{word: 'squid', zh: '烏賊'},
+{word: 'swim', zh: '游泳'},
+{word: 'soccer', zh: '足球（運動）'},
+{word: 'violin', zh: '小提琴'},
+{word: 'table tennis', zh: '桌球'},
+{word: 'tennis', zh: '網球'},
+{word: 'volleyball', zh: '排球'},
+{word: 'guitar', zh: '吉他'},
+{word: 'poster', zh: '海報'},
+{word: 'recorder', zh: '直笛；錄音機'},
+{word: 'piano', zh: '鋼琴'},
+{word: 'sandwich', zh: '三明治'},
+{word: 'eagle', zh: '老鷹'},
+{word: 'roller-skate', zh: '直排輪（溜冰）'},
+{word: 'flute', zh: '長笛'},
+{word: 'football', zh: '足球'},
+{word: 'map', zh: '地圖'},
+{word: 'trash can', zh: '垃圾桶'},
+{word: 'locker', zh: '置物櫃'},
+{word: 'ball', zh: '球'},
+{word: 'open', zh: '打開；開放'},
+{word: 'calculator', zh: '計算機'},
+{word: 'shoe rack', zh: '鞋架'},
+{word: 'library', zh: '圖書館'},
+{word: 'puzzle', zh: '拼圖；難題'},
+{word: 'door', zh: '門'},
+{word: 'bookshelf', zh: '書架'},
+{word: 'thick', zh: '厚的；濃的'},
+{word: 'magazine', zh: '雜誌'},
+{word: 'window', zh: '窗戶'},
+{word: 'blocks', zh: '積木'},
+{word: 'shout', zh: '大喊'},
+{word: 'counter', zh: '櫃檯；計數器'},
+{word: 'dictionary', zh: '字典'},
+{word: 'step stool', zh: '踏腳凳'},
+{word: 'playground', zh: '遊樂場'},
+{word: 'basketball', zh: '籃球'},
+{word: 'waffles', zh: '鬆餅'},
+{word: 'clerk', zh: '職員；店員'},
+{word: 'drink', zh: '喝；飲料'},
+{word: 'eat', zh: '吃'},
+{word: 'borrow', zh: '借（借入）'},
+{word: 'music', zh: '音樂'},
+{word: 'spaghetti', zh: '義大利麵'},
+{word: 'sports', zh: '運動'},
+{word: 'scarf', zh: '圍巾'},
+{word: 'cookie', zh: '餅乾'},
+{word: 'paint', zh: '油漆；塗料'},
+{word: 'yell', zh: '大喊'},
+{word: 'pumpkin', zh: '南瓜'},
+{word: 'baseball', zh: '棒球'},
+{word: 'noisy', zh: '吵鬧的'},
+{word: 'may', zh: '可能；五月'},
+{word: 'math', zh: '數學'},
+{word: 'science', zh: '科學'},
+{word: 'brush', zh: '刷子'}];
+function norm(s){return s.toLowerCase().replace(/[^a-z]/g,'');}
+const ALL = WORDS.slice();
+let filtered = ALL.slice();
+let current = null; let score=0, round=0, best = Number(localStorage.getItem('movers-best')||0);
+document.getElementById('best').textContent=best;
+function renderWords(){ const container = document.getElementById('words'); container.innerHTML=''; filtered.forEach(it=>{ const div = document.createElement('div'); div.className='word-item'; const left = document.createElement('div'); const w = document.createElement('div'); w.textContent=it.word; w.style.fontWeight='700'; const zh = document.createElement('div'); zh.textContent=it.zh; zh.className='word-meta'; zh.style.cursor='pointer'; zh.title='點擊可複製中文'; zh.onclick = ()=>{ navigator.clipboard && navigator.clipboard.writeText(it.zh); alert('已複製: '+it.zh); }; left.appendChild(w); left.appendChild(zh); const btn = document.createElement('button'); btn.className='btn ghost'; btn.textContent='Play'; btn.onclick=()=>speak(it.word); div.appendChild(left); div.appendChild(btn); container.appendChild(div); }); }
+function speak(text){ if(!('speechSynthesis' in window)){ alert('瀏覽器不支援語音合成，建議使用 Chrome'); return; } window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=0.95; window.speechSynthesis.speak(u); }
+function speakLetters(text){ const letters = text.replace(/\s+/g,'').split(''); let i=0; function next(){ if(i>=letters.length) return; speak(letters[i]); i++; setTimeout(next,420); } next(); }
+function chunkWord(w){ const s=w.replace(/\s+/g,''); const chunks=[]; let cur=''; for(let i=0;i<s.length;i++){ cur+=s[i]; const isVowel=/[aeiou]/.test(s[i]); const nextIsConsonant = i+1<s.length && /[^aeiou]/.test(s[i+1]); if(isVowel && nextIsConsonant){ chunks.push(cur); cur=''; } } if(cur) chunks.push(cur); return chunks.length?chunks:[s]; }
+function applyFilter(){ const q=document.getElementById('search').value.toLowerCase(); const len=Number(document.getElementById('lenRange').value); document.getElementById('lenVal').textContent=len; filtered = ALL.filter(it=> it.word.toLowerCase().includes(q) || it.zh.includes(q)); filtered = filtered.filter(it=> norm(it.word).length <= len); renderWords(); }
+document.getElementById('search').addEventListener('input', applyFilter); document.getElementById('lenRange').addEventListener('input', applyFilter); applyFilter();
+function startRound(){ const pool = filtered.length?filtered:ALL; const pick = pool[Math.floor(Math.random()*pool.length)]; current = pick; round++; document.getElementById('round').textContent = round; document.getElementById('lenInfo').textContent = pick.word.replace(/\s+/g,'').length; updateMask(0); document.getElementById('spellingInput').value=''; speak(pick.word); }
+function updateMask(hint){ const s = current?current.word.replace(/\s+/g,'') : ''; if(!s){ document.getElementById('maskText').textContent='_'; return; } if(hint===0) document.getElementById('maskText').textContent = '_ '.repeat(s.length).trim(); else if(hint===1) document.getElementById('maskText').textContent = s[0] + ' ' + '_ '.repeat(Math.max(0,s.length-1)).trim(); else document.getElementById('maskText').textContent = s[0] + ' ' + '_ '.repeat(Math.max(0,s.length-2)).trim() + (s.length>1? ' '+s[s.length-1] : ''); }
+document.getElementById('randBtn').addEventListener('click', startRound); document.getElementById('playWord').addEventListener('click', ()=> current && speak(current.word)); document.getElementById('playLetters').addEventListener('click', ()=> current && speakLetters(current.word)); document.getElementById('playTest').addEventListener('click', ()=> speak('Hello! Let us learn words.'));
+document.getElementById('checkBtn').addEventListener('click', checkAnswer); document.getElementById('spellingInput').addEventListener('keydown', e=>{ if(e.key==='Enter') checkAnswer(); });
+function checkAnswer(){ if(!current) return alert('請先按「隨機出題」'); const input = document.getElementById('spellingInput').value; if(norm(input) === norm(current.word)){ score++; document.getElementById('score').textContent = score; document.getElementById('score2').textContent = score; best = Math.max(best, score); document.getElementById('best').textContent = best; localStorage.setItem('movers-best',best); speak('Great job!'); startRound(); } else { speak('Try again'); document.getElementById('hintBox').textContent = '不正確，請再試一次或使用提示。'; } }
+let hintState = 0; document.getElementById('hintFirst').addEventListener('click', ()=>{ if(!current) return; hintState = Math.max(hintState,1); updateMask(hintState); document.getElementById('hintBox').textContent='已顯示第一個字母。'; speak(current.word[0]); }); document.getElementById('hintLast').addEventListener('click', ()=>{ if(!current) return; hintState = Math.max(hintState,2); updateMask(hintState); document.getElementById('hintBox').textContent='已顯示第一和最後一個字母。'; speak(current.word[current.word.length-1]); }); document.getElementById('hintChunks').addEventListener('click', ()=>{ if(!current) return; const chunks = chunkWord(current.word); document.getElementById('hintBox').textContent = '分段: ' + chunks.join(' · '); speak(chunks.join(' ')); }); document.getElementById('revealBtn').addEventListener('click', ()=>{ if(!current) return; document.getElementById('spellingInput').value = current.word; speak(current.word); document.getElementById('hintBox').textContent = '答案已填入。'; });
+document.getElementById('downloadBtn').addEventListener('click', ()=>{ const doc = '<!doctype html>\n' + document.documentElement.outerHTML; const blob = new Blob([doc], {type:'text/html'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'movers_advanced_with_chinese.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+renderWords();
+</script>
+</body></html>
